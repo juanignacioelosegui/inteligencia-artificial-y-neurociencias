@@ -75,14 +75,4 @@ donde `TPs` es el promedio de los trabajos prácticos (un TP no entregado cuenta
 - Wei et al. (2022). Chain-of-thought prompting elicits reasoning in large language models. *NeurIPS*, 35. arXiv:2201.11903.
 - Lewis et al. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks. *NeurIPS*, 33. arXiv:2005.11401.
 
-## Estructura del repositorio
-
-```
-.
-├── apuntes/        # Notas y resúmenes por unidad
-├── practicos/      # Trabajos prácticos
-├── material/       # PDFs y recursos del campus
-└── README.md
-```
-
 > La bibliografía completa está disponible en el campus virtual de la materia.
