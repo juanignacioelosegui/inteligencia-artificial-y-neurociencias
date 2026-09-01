@@ -1,0 +1,66 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{geometry}
+\usepackage{booktabs}
+
+\geometry{top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm}
+
+\title{\textbf{Trabajo Práctico 1: Aprendizaje por Refuerzos en Gold Dice RL}}
+\author{Wu, Urdaniz, González Merlhe, Elosegui}
+
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+
+El presente trabajo práctico aborda el desarrollo y entrenamiento de agentes de aprendizaje por refuerzo para el juego estocástico Gold Dice RL, un entorno de un jugador con horizonte finito de 30 turnos donde el objetivo es maximizar la cantidad de puntos acumulados al final de la partida. En cada turno, el agente observa el estado actual (turno, puntos, oro disponible, número de dados, bonus, escudos y resultado de la tirada) y debe seleccionar una acción entre las seis disponibles: no hacer nada (PASS), convertir oro en puntos (SCORE), comprar un dado adicional (BUY\_DICE), mejorar el bonus permanente (UPGRADE), comprar un escudo (BUY\_SHIELD) o guardar el mejor dado de la tirada (STORE\_BEST\_DIE). El entorno incorpora elementos estocásticos significativos: las tiradas de dados generan oro de manera aleatoria y las tormentas ocurren con probabilidad 0.15, reduciendo drásticamente el oro acumulado si el agente no posee escudos. Esta dinámica plantea un equilibrio estratégico fundamental entre la explotación inmediata (convertir oro en puntos), la inversión a futuro (comprar dados o mejorar bonus) y la protección contra riesgos (adquirir escudos), lo que convierte a Gold Dice RL en un caso de estudio ideal para evaluar diferentes enfoques de aprendizaje por refuerzo.
+
+\section{Metodología}
+
+\subsection{Agente de Q-Learning Tabular con Epsilon-Greedy}
+
+El primer enfoque implementado fue un agente de Q-Learning tabular que mantiene una tabla de valores Q para cada par estado-acción. Dado que el espacio de estados original es continuo y no acotado, fue necesario discretizarlo mediante buckets sobre seis dimensiones: los turnos restantes, el oro disponible (dividido en nueve categorías), el número de dados (capado a 8), el bonus (capado a 6), la cantidad de escudos (capado a 3) y el valor máximo de tirada (capado a 12). Para abordar la naturaleza parametrizada de SCORE, se introdujeron meta-acciones que representan fracciones fijas del oro disponible (0\%, 25\%, 50\%, 75\% y 100\%), combinadas con las cinco acciones básicas restantes para obtener diez meta-acciones discretas. El algoritmo de actualización fue el Q-Learning estándar, con tasa de aprendizaje $\alpha = 0.1$ y factor de descuento $\gamma = 0.97$. La política de exploración fue epsilon-greedy con decaimiento lineal desde 1.0 hasta 0.05 a lo largo de 3000 episodios.
+
+\subsection{Agente Deep Q-Network}
+
+El segundo enfoque consistió en un agente basado en DQN que utiliza una red neuronal profunda para aproximar la función de valor Q. La arquitectura consta de una capa de entrada con seis características normalizadas del estado, seguidas de tres capas ocultas completamente conectadas con 128, 128 y 64 neuronas y activación ReLU, y una capa de salida con diez neuronas correspondientes a las meta-acciones. La normalización del estado fue cuidadosamente diseñada: el turno se normaliza por el horizonte, el oro se transforma mediante logaritmo para comprimir su rango dinámico, y las variables restantes se capan y normalizan al rango unitario. Para garantizar estabilidad, se incorporaron técnicas modernas: buffer de experiencia con capacidad para 100.000 transiciones y muestreo de batches de 128 experiencias, red objetivo con soft update ($\tau = 0.01$) cada 100 pasos, Double DQN para mitigar la sobreestimación, y optimizador Adam con tasa de aprendizaje 0.0003. La función de recompensa combinó el incremento de puntos obtenidos, recompensas positivas por acciones seguras y penalizaciones por tormentas no bloqueadas.
+
+\section{Resultados}
+
+\subsection{Entrenamiento del Agente Q-Learning Tabular}
+
+El agente de Q-Learning tabular fue entrenado durante 10.000 episodios, evaluándose su rendimiento en bloques de 1000 episodios. Los resultados muestran una mejora progresiva: el puntaje promedio aumenta desde 88.91 puntos en los primeros 1000 episodios hasta alcanzar un máximo de 102.77 puntos en el bloque de 4000 a 4999 episodios, estabilizándose alrededor de 102-103 puntos a partir de entonces. La evaluación final sobre 500 partidas independientes arrojó un puntaje promedio de 103.38 puntos, con desviación estándar de 9.37 puntos. Si bien este resultado supera ampliamente al agente aleatorio (64.17 puntos), se queda por debajo de la heurística SimpleExpectancy (346.96 puntos). La tabla Q resultante contenía 3994 estados visitados, evidenciando una exploración significativa del espacio discretizado.
+
+\subsection{Entrenamiento del Agente DQN}
+
+El agente DQN mostró una curva de aprendizaje muy superior. En las evaluaciones periódicas cada 200 episodios, el agente alcanzó 274.50 puntos en el episodio 400, superando ya a SimpleExpectancy, y continuó mejorando hasta alcanzar un pico de 596.53 puntos en el episodio 5200. La evaluación final sobre 500 partidas independientes arrojó un puntaje promedio de 594.88 puntos, con desviación estándar de 140.08 puntos, lo que representa una mejora del 71\% sobre SimpleExpectancy y del 475\% sobre el agente tabular. La mayor desviación estándar refleja la naturaleza más agresiva de la política aprendida, que puede producir partidas tanto excepcionales (más de 1000 puntos) como ocasionalmente deficientes. La curva de aprendizaje presentó cierta inestabilidad con caídas ocasionales de rendimiento (episodios 1200, 1800, 2800), comportamiento característico de DQN del cual el agente se recuperó consistentemente.
+
+\subsection{Análisis de Estrategias y Discusión}
+
+El análisis cualitativo de las políticas aprendidas revela diferencias fundamentales entre los agentes. El agente DQN desarrolla una estrategia sofisticada de "inversión temprana, protección media y puntuación tardía": invierte agresivamente en dados y mejoras en los primeros turnos para maximizar la generación de oro, acumula escudos estratégicamente para protegerse contra tormentas, y realiza conversiones masivas de oro en puntos en los turnos finales. Esta estrategia, que emerge completamente del aprendizaje sin intervención humana, contrasta con el enfoque conservador de SimpleExpectancy que prioriza la compra de escudos incluso cuando el riesgo es bajo. El agente tabular, por su parte, queda limitado por la discretización grosera del estado, que pierde información relevante y no permite generalizar adecuadamente.
+
+Los resultados confirman la superioridad de los métodos de aprendizaje profundo para problemas con espacios de estado continuos. El agente DQN, al aprender representaciones continuas, captura relaciones sutiles entre variables y generaliza a situaciones no visitadas durante el entrenamiento. Las limitaciones del estudio incluyen la restricción a diez meta-acciones para SCORE, que introduce un sesgo que podría limitar el rendimiento máximo. Futuras mejoras podrían incluir algoritmos de gradiente de políticas para seleccionar directamente la cantidad de oro a puntuar, o arquitecturas más avanzadas como Dueling DQN o Prioritized Experience Replay.
+
+\section{Conclusiones}
+
+En el presente trabajo se implementaron y evaluaron dos enfoques de aprendizaje por refuerzo para Gold Dice RL: un agente de Q-Learning tabular y un agente DQN con técnicas de estabilización avanzadas. El agente DQN demostró un rendimiento superior, alcanzando 594.88 puntos promedio en 500 partidas de evaluación, superando ampliamente a SimpleExpectancy (346.96 puntos) y al agente tabular (103.38 puntos). El éxito del DQN se atribuye a su capacidad para aprender representaciones continuas del estado y desarrollar estrategias complejas que equilibran inversión, protección y puntuación de manera adaptativa. Los resultados posicionan al agente DQN como un candidato fuerte para el torneo final y proporcionan una base sólida para futuras mejoras mediante técnicas más avanzadas de aprendizaje por refuerzo.
+
+\section*{Anexo: Resultados Comparativos}
+
+\begin{center}
+	\begin{tabular}{lcccccccc}
+		\toprule
+		\textbf{Agente}  & \textbf{Media} & \textbf{Std} & \textbf{Min} & \textbf{p25} & \textbf{Mediana} & \textbf{p75} & \textbf{Max} \\
+		\midrule
+		RandomLegal      & 64.17          & 40.32        & 1            & 38.75        & 55.0             & 78.0         & 246          \\
+		SimpleExpectancy & 346.96         & 104.25       & 86           & 271.75       & 346.0            & 417.25       & 666          \\
+		EpsilonGreedyQ   & 103.38         & 9.37         & 72           & 97.0         & 103.0            & 110.0        & 132          \\
+		DQN              & 594.88         & 140.08       & 55           & 517.75       & 598.5            & 693.0        & 1008         \\
+		\bottomrule
+	\end{tabular}
+\end{center}
+
+\end{document}
