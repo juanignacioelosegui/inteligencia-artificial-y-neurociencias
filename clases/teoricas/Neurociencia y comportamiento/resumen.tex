@@ -1,0 +1,225 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\title{\textbf{Resumen -- Neurociencia y Comportamiento} \\
+\large Inteligencia Artificial y Neurociencias \\ Universidad Torcuato Di Tella}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+%% ============================================================
+\section{Clase 1 -- Modelado Computacional del Comportamiento Humano}
+%% ============================================================
+
+\subsection{Contexto: el paper de van Opheusden et al.\ (2023)}
+
+El art\'iculo \textit{Expertise increases planning depth in human gameplay} (Nature, 2023) estudia la \textbf{profundidad de planificaci\'on} en humanos: \textquestiondown los jugadores m\'as expertos planifican m\'as pasos a futuro que los novatos?
+
+\textbf{Problema de medici\'on.} Medir profundidad de planificaci\'on es dif\'icil porque:
+\begin{itemize}[nosep]
+    \item La complejidad de muchas tareas no basta para distinguir expertos de novatos (e.g.\ tareas de dos pasos).
+    \item El juego debe ser \emph{tratable computacionalmente} (no como el ajedrez).
+    \item Debe tener reglas simples, novedosas e interesantes.
+\end{itemize}
+El juego \textbf{Four-In-A-Row} (4 en l\'inea) cumple todas estas condiciones: es suficientemente complejo para que los expertos planifiquen con profundidad, pero tambi\'en simple para ajustar un modelo computacional con par\'ametros bien definidos.
+
+\subsection{El modelo cognitivo}
+
+El modelo tiene tres componentes, cada uno con par\'ametros ajustables:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Feature-based Value Function} (funci\'on heur\'istica de valor): asigna un valor $V(s, \mathbf{w})$ a cada estado del tablero $s$.
+    \[
+        V(s, \mathbf{w}) = \sum_{i=1}^{5} w_i \, \phi_i(s, \text{self}) \;-\; \sum_{i=1}^{5} w_i \, \phi_i(s, \text{oponente})
+    \]
+    donde $\phi_i$ son cinco \emph{features}: centro, dos-en-l\'inea conectado, dos-en-l\'inea no conectado, tres-en-l\'inea y cuatro-en-l\'inea. Features del mismo color comparten pesos. Los pesos del jugador activo se multiplican por una constante de escala $C$.
+
+    \item \textbf{Search Algorithm} (algoritmo de b\'usqueda): en cada iteraci\'on elige una posici\'on del \'arbol para expandir, eval\'ua las posiciones resultantes con $V(s)$ y \emph{poda} movimientos cuyo valor est\'e por debajo del mejor menos un umbral. Despu\'es de cada iteraci\'on, el algoritmo se detiene con probabilidad $\gamma$ (distribuci\'on geom\'etrica sobre el n\'umero total de iteraciones). Los nodos rojos del \'arbol de decisi\'on forman la \textbf{variaci\'on principal} (secuencia de mejores movimientos para ambos jugadores).
+
+    \item \textbf{Attention Mechanism} (mecanismo de atenci\'on): modela la atenci\'on selectiva descartando aleatoriamente \emph{features} (en posiciones y orientaciones espec\'ificas) antes de construir el \'arbol. Adem\'as se a\~nade ruido gaussiano a $V(s)$ en cada nodo y existe una tasa de lapsus $\lambda$ (probabilidad de elegir una acci\'on al azar).
+\end{enumerate}
+
+\subsection{Resultados principales}
+
+\begin{itemize}[nosep]
+    \item El modelo predice con buena precisi\'on las \textbf{elecciones} humanas (validaci\'on cruzada 5-fold en partidas humano vs.\ humano), muy por encima del azar.
+    \item Predice \textbf{tiempos de respuesta}: el tama\~no del \'arbol de decisi\'on es predictor del RT observado.
+    \item Predice \textbf{movimientos oculares}: la distribuci\'on de casillas visitadas por el algoritmo de b\'usqueda correlaciona con la distribuci\'on de atenci\'on visual ($\rho = 0.535 \pm 0.024$, $P < 0.001$).
+\end{itemize}
+
+\textbf{Conclusi\'on:} los jugadores m\'as fuertes planifican m\'as profundamente y tienen menos lapsus atencionales. No hay evidencia de mejora en la calidad de la heur\'istica (pesos de features).
+
+\subsection{Hip\'otesis de implementaci\'on neural}
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Componente del modelo} & \textbf{Regi\'on cerebral} \\
+\hline
+Feature-based Value Function & Corteza orbitofrontal \\
+Search Algorithm & Corteza prefrontal, c\'ingulo, hipocampo \\
+Attention Mechanism & Red frontoparietal \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Discusi\'on: profundidad vs.\ reconocimiento de patrones}
+
+La literatura explica la superioridad de los expertos por mejor \emph{pattern recognition} y/o b\'usqueda m\'as profunda. Los autores equiparan ``planificar m\'as profundamente'' con mayor ``velocidad de procesamiento'': los expertos afinan su representaci\'on de features relevantes, lo que permite m\'as evaluaciones por unidad de tiempo. Esto es consistente con mejor reconocimiento de patrones, pero destaca el rol subestimado de la velocidad de procesamiento.
+
+%% ============================================================
+\section{Clase 2 -- Aprendizaje (Parte 1)}
+%% ============================================================
+
+\subsection{Definici\'on de aprendizaje}
+
+\textbf{Aprendizaje:} cambio en el comportamiento debido a la experiencia.
+
+Tipos de aprendizaje simple en humanos (condicionamiento cl\'asico de Pavlov y condicionamiento operante de Skinner se ver\'an en otra clase).
+
+\subsection{Aprendizaje en redes neuronales artificiales}
+
+Las neuronas biol\'ogicas (soma, ax\'on, dendritas) inspiran las neuronas artificiales: suma ponderada de entradas + no-linealidad. Las redes neuronales artificiales organizan estas unidades en capas (entrada, ocultas, salida).
+
+\subsection{Aprendizaje en organoides inteligentes}
+
+\begin{itemize}[nosep]
+    \item \textit{Brain organoid reservoir computing for AI} (Nature Electronics, 2023): hardware inspirado en la estructura cerebral para reconocimiento de audio.
+    \item \textit{In vitro neurons learn and exhibit sentience when embodied in a simulated game-world} (2022): neuronas in vitro aprenden a jugar Pong. La actividad neural cambia en tiempo real para minimizar la impredecibilidad ambiental (\emph{Free Energy Principle}).
+\end{itemize}
+
+\subsection{Priors humanos para videojuegos}
+
+Paper: \textit{Investigating Human Priors for Playing Video Games} (Dubey et al., UC Berkeley). Pregunta central: \textquestiondown por qu\'e los humanos aprenden juegos como Mario Bros.\ r\'apidamente y las m\'aquinas tardan much\'isimo m\'as?
+
+\subsection{Aprendizaje humano: \textquestiondown cu\'ales son los priors?}
+
+Ejemplos de conocimiento innato (\emph{priors}) en humanos:
+
+\begin{itemize}[nosep]
+    \item \textbf{Detecci\'on de amenazas:} estamos cableados para encontrar v\'iboras m\'as r\'apido que flores.
+    \item \textbf{Violaci\'on de leyes f\'isicas:} beb\'es de 3 meses muestran sorpresa ante eventos f\'isicamente imposibles.
+    \item \textbf{Intuici\'on num\'erica y probabil\'istica:} los beb\'es miran m\'as si cae una pelota de color menos probable; generalizan entre modalidades (auditiva $\to$ visual).
+    \item \textbf{Razonamiento l\'ogico pre-verbal:} beb\'es de 12--19 meses tienen nociones de sumas, restas y conservaci\'on (Cesana-Arlotti et al.).
+    \item \textbf{Preferencia por caras:} incluso intrauterinamente, los fetos prefieren est\'imulos tipo cara.
+\end{itemize}
+
+Estos comportamientos son \textbf{instintivos}: aparecen en humanos t\'ipicos con desarrollo t\'ipico. Permiten el aprendizaje de comportamientos m\'as complejos (e.g.\ atenci\'on innata al habla $\to$ aprendizaje del lenguaje). Fueron seleccionados a lo largo de la evoluci\'on.
+
+\subsection{Evoluci\'on y selecci\'on natural}
+
+\textbf{Evoluci\'on:} cambio en los organismos de una poblaci\'on a lo largo del tiempo.
+
+\textbf{Selecci\'on natural} (Charles Darwin): ocurre cuando existen tres condiciones:
+\begin{enumerate}[nosep]
+    \item \textbf{Variabilidad} entre los rasgos de los individuos.
+    \item \textbf{Heredabilidad} de esas variaciones (aunque pueden ocurrir mutaciones o recombinaciones).
+    \item \textbf{Adaptabilidad:} algunas variaciones se adaptan mejor al ambiente; los individuos que las poseen sobreviven m\'as y dejan m\'as descendencia.
+\end{enumerate}
+
+\subsubsection{Herencia: concepto de gen}
+
+Un \textbf{gen} es la unidad m\'inima de herencia: secuencia de ADN que codifica un determinado producto en el organismo. El concepto es anterior al descubrimiento del ADN y surgi\'o de observar que padres e hijos se parecen en aspectos que se heredan independientemente.
+
+\subsubsection{Darwin vs.\ Lamarck}
+
+En la teor\'ia de \textbf{Lamarck}, los rasgos adquiridos durante la vida se heredan, por lo que no se necesitan variaciones previas en la poblaci\'on. En la de \textbf{Darwin}, los rasgos adquiridos \emph{no} se heredan; las variaciones preexistentes son esenciales para la selecci\'on natural.
+
+\subsubsection{Tres frutos de un proceso evolutivo darwinista}
+
+\begin{enumerate}[nosep]
+    \item \textbf{Adaptaciones:} rasgos que aumentaron el \'exito reproductivo (e.g.\ cord\'on umbilical, hemoglobina). Ejemplos comportamentales: gusto por el az\'ucar, impulso sexual, apego paterno-materno, enamoramiento.
+    \item \textbf{Subproductos (\emph{byproducts}):} consecuencias de rasgos adaptativos sin ventaja evolutiva propia (e.g.\ ombligo, color rojo de la sangre). Ejemplos comportamentales: adicciones, gusto por el f\'utbol, sexo con anticonceptivos.
+    \item \textbf{Ruido:} variaci\'on aleatoria sin funci\'on.
+\end{enumerate}
+
+\subsection{Selecci\'on de comportamientos y estructura cerebral}
+
+El cerebro es una gran red neuronal cuyos \textbf{hiperpar\'ametros} (estructura a gran escala) fueron seleccionados por evoluci\'on darwinista. Se seleccionan genes que influyen en la estructura cerebral: si una mutaci\'on mejora supervivencia y reproducci\'on, esos genes mutados se seleccionan.
+
+Analog\'ia v\'alida: la selecci\'on natural ``dise\~n\'o'' la estructura a gran escala y los hiperpar\'ametros; durante la vida hacemos el \textbf{\emph{fine tuning}}.
+
+Cita de Stanislas Dehaene: el cerebro no es tabula rasa ni m\'odulos fijos e inmutables. Los circuitos est\'an organizados desde el nacimiento pero poseen plasticidad. Lo innato y lo adquirido se combinan.
+
+%% ============================================================
+\section{Clase 3 -- Aprendizaje (Parte 2)}
+%% ============================================================
+
+\subsection{Teor\'ia de la Carga Cognitiva (CLT)}
+
+La clave del aprendizaje es guardar informaciones y automatizar procedimientos en la \textbf{memoria de largo plazo}. La mejor forma: ense\~nar y aprender de forma expl\'icita y estructurada.
+
+Ventajas: permite repetici\'on desde el principio (principio de Hebb), evita frustraci\'on, optimiza motivaci\'on y refuerza plasticidad gracias a la dopamina. Resolver problemas solos desde el comienzo (aunque sean sencillos) genera motivaci\'on, tanto en ni\~nos como en adultos.
+
+\subsection{Las tres etapas de cualquier aprendizaje}
+
+\begin{enumerate}[nosep]
+    \item \textbf{Adquisici\'on:} el estudiante a\'un no responde con precisi\'on sin ayuda. Instrucci\'on expl\'icita y sistem\'atica. Pr\'actica en bloques (preguntas del mismo tipo).
+    \item \textbf{Fluidez:} responde con precisi\'on pero lentamente. Pr\'actica cronometrada para desarrollar velocidad y automaticidad.
+    \item \textbf{Generalizaci\'on:} tiene fluidez y transfiere la habilidad a contextos nuevos. Pr\'actica intercalada y problemas no rutinarios.
+\end{enumerate}
+Adem\'as existe una etapa de \textbf{mantenimiento}: retener la habilidad mediante pr\'actica espaciada.
+
+\subsection{Los cuatro pilares del aprendizaje (Dehaene)}
+
+\subsubsection{1.\ Atenci\'on}
+
+Aprendemos cuando hacemos un esfuerzo que nos saca levemente de la \textbf{zona de confort} $\to$ \textbf{pr\'actica deliberada}.
+
+Concepto de \textbf{OK Plateau}: al aprender a manejar o teclear, se llega a un nivel aceptable y se deja de prestar atenci\'on a c\'omo mejorar. Sin atenci\'on no hay mejora. Para pasar de amateur a experto hay que seguir prestando atenci\'on.
+
+Test de la zona de confort (Kahneman, \textit{Pensar r\'apido, pensar despacio}): si puedo hacer lo que hago y al mismo tiempo otra cosa no automatizada, entonces no estoy prestando atenci\'on.
+
+\subsubsection{2.\ Feedback}
+
+El premio por buen desempe\~no funciona mejor que el castigo por mal desempe\~no.
+
+\textbf{Regresi\'on a la media:} puede generar la ilusi\'on de que premiar empeora y castigar mejora. En realidad, tras un desempe\~no extremo (bueno o malo), lo m\'as probable es volver al promedio.
+
+\textbf{Feedback constructivo} (t\'ecnica organizacional):
+\begin{itemize}[nosep]
+    \item Valoro...
+    \item Me pregunto...
+    \item Sugiero...
+\end{itemize}
+
+\textbf{La maldici\'on del conocimiento} (Steven Pinker): cuando conocemos algo, dejamos de poder ver el mundo como alguien que no lo conoce. Por eso es fundamental el feedback en la buena comunicaci\'on.
+
+\subsubsection{3.\ Motivaci\'on}
+
+Dos tipos principales:
+\begin{itemize}[nosep]
+    \item \textbf{Intr\'inseca} (hago por placer): satisfacci\'on inherente, sin recompensa externa.
+    \item \textbf{Extr\'inseca} (hago por recompensa): obtener recompensa externa o evitar consecuencia negativa.
+\end{itemize}
+
+Amenazas a la motivaci\'on en proyectos de producci\'on por pares (software libre):
+\begin{enumerate}[nosep]
+    \item Temor a la apropiaci\'on unilateral.
+    \item Temor a la falla en la integraci\'on (esfuerzo desperdiciado).
+\end{enumerate}
+
+\textbf{T\'ecnica Pomodoro:} regulaci\'on del esfuerzo mediante bloques de trabajo con pausas programadas.
+
+\subsubsection{4.\ Consolidaci\'on}
+
+\textbf{El poder del h\'abito:} el aprendizaje es \textbf{multiplicativo}, no aditivo. Cada nuevo conocimiento se relaciona con todos los anteriores, generando crecimiento geom\'etrico. Esto explica la sensaci\'on de que un experto es un ``genio''.
+
+\textbf{Reserva cognitiva:} tolerancia cognitiva o ps\'iquica frente a cambios cerebrales fisiol\'ogicos relacionados con la edad o alguna patolog\'ia. Las \textbf{Zonas Azules} (Loma Linda, Sardinia, Okinawa, Ikaria, Nicoya) muestran que el aprendizaje continuo y los h\'abitos saludables contribuyen a mayor longevidad y reserva cognitiva.
+
+\end{document}
