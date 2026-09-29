@@ -1,0 +1,140 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{mdframed}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\newmdenv[
+    linecolor=gray!50,
+    linewidth=0.5pt,
+    backgroundcolor=gray!8,
+    skipabove=6pt,
+    skipbelow=6pt,
+    innertopmargin=6pt,
+    innerbottommargin=6pt,
+]{respuesta}
+
+\newcommand{\pregunta}[1]{\subsection{#1}}
+\newcommand{\eje}[1]{\subsubsection{#1}}
+\newcommand{\argmax}{\operatorname*{arg\,m\acute{a}x}}
+
+\title{\textbf{Modelo de Parcial 1 -- Aprendizaje por Refuerzo} \\
+\large Inteligencia Artificial y Neurociencias \\ Universidad Torcuato Di Tella}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{mdframed}[linecolor=black, linewidth=0.7pt]
+\textbf{Formato.} Combina \textbf{ejercicios pr\'acticos} (seguimiento manual de algoritmos, c\'alculo de retornos y valores) con \textbf{preguntas de interpretaci\'on} sobre las f\'ormulas y conceptos. Debajo de cada consigna se da una \emph{respuesta posible} a modo de gu\'ia.
+\end{mdframed}
+
+\eje{1. Bandidos de $k$ brazos (pr\'actico)}
+\pregunta{Se aplica un algoritmo de bandidos de $k=3$ brazos (acciones 1, 2, 3) con selecci\'on $\varepsilon$-greedy, estimando los valores con el promedio muestral y con $Q_1(a)=0$ para toda $a$. La secuencia de acciones y recompensas es: $A_1{=}1, R_1{=}2$; $A_2{=}2, R_2{=}{-}1$; $A_3{=}1, R_3{=}1$; $A_4{=}3, R_4{=}2$; $A_5{=}1, R_5{=}0$. \textquestiondown En qu\'e pasos \textbf{seguro} ocurri\'o el caso $\varepsilon$ (acci\'on al azar) y en qu\'e pasos \textbf{podr\'ia} haber ocurrido?}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Se calcula $Q_t(a)$ antes de cada paso y se compara la acci\'on tomada con la(s) acci\'on(es) greedy. Si la acci\'on tomada \emph{no} es greedy, seguro fue exploraci\'on; si lo es, pudo ser greedy o exploraci\'on.
+
+\begin{center}
+\begin{tabular}{c c c c l}
+\toprule
+$t$ & $Q_t(1),Q_t(2),Q_t(3)$ & greedy & $A_t$ & conclusi\'on \\
+\midrule
+1 & $(0,0,0)$        & $\{1,2,3\}$ & 1 & \textbf{podr\'ia} (empate) \\
+2 & $(2,0,0)$        & $\{1\}$     & 2 & \textbf{seguro} $\varepsilon$ \\
+3 & $(2,-1,0)$       & $\{1\}$     & 1 & \textbf{podr\'ia} \\
+4 & $(1{,}5,-1,0)$   & $\{1\}$     & 3 & \textbf{seguro} $\varepsilon$ \\
+5 & $(1{,}5,-1,2)$   & $\{3\}$     & 1 & \textbf{seguro} $\varepsilon$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent (Actualizaciones: tras $t{=}1$, $Q(1){=}2$; tras $t{=}3$, $Q(1){=}\frac{2+1}{2}{=}1{,}5$; tras $t{=}4$, $Q(3){=}2$.)
+Entonces: \textbf{seguro} en $t=2,4,5$; \textbf{podr\'ia} en $t=1,3$.
+\end{respuesta}
+
+\eje{2. Bandidos (interpretaci\'on)}
+\pregunta{La regla de actualizaci\'on incremental puede escribirse como
+$\;\text{NuevaEst} = \text{ViejaEst} + \text{TasaApr}\,[\,\text{Objetivo} - \text{ViejaEst}\,]$.
+Identifique qu\'e es cada t\'ermino en el caso del promedio muestral ($Q_{n+1}=Q_n+\frac{1}{n}[R_n-Q_n]$) y explique por qu\'e en problemas \textbf{no estacionarios} conviene usar una tasa $\alpha$ constante en vez de $\frac1n$.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} \textbf{ViejaEst} es $Q_n$ (la estimaci\'on previa del valor de la acci\'on), \textbf{NuevaEst} es $Q_{n+1}$, el \textbf{Objetivo} es la recompensa reci\'en observada $R_n$, y la \textbf{TasaApr} es $\frac1n$. El t\'ermino $[R_n - Q_n]$ es el \emph{error de estimaci\'on}: la actualizaci\'on mueve la estimaci\'on una fracci\'on de ese error hacia el objetivo.
+
+Con $\frac1n$, la tasa decrece con el tiempo y todas las recompensas pesan igual (promedio muestral), lo que converge al valor real \emph{si} el valor no cambia. Pero si el problema es \textbf{no estacionario} (los valores $q_*(a)$ var\'ian en el tiempo), interesa dar \textbf{m\'as peso a las recompensas recientes}. Con $\alpha$ constante, $Q_{n+1}=(1-\alpha)^n Q_1 + \sum_{i=1}^{n}\alpha(1-\alpha)^{n-i}R_i$: los pesos de las recompensas viejas decaen exponencialmente, as\'i la estimaci\'on ``olvida'' el pasado y sigue los cambios del ambiente.
+\end{respuesta}
+
+\eje{3. MDP: retornos (pr\'actico)}
+\pregunta{Dada la secuencia de recompensas $R_1{=}2,\,R_2{=}0,\,R_3{=}{-}1,\,R_4{=}3,\,R_5{=}1$ con $T=5$ y $\gamma=0{,}5$, calcular $G_0, G_1, \dots, G_4$. \emph{Ayuda: de atr\'as hacia adelante usando $G_t = R_{t+1} + \gamma\,G_{t+1}$.}}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Con $G_5 = 0$:
+\begin{align*}
+G_4 &= R_5 + \gamma G_5 = 1 + 0{,}5\cdot 0 = 1 \\
+G_3 &= R_4 + \gamma G_4 = 3 + 0{,}5\cdot 1 = 3{,}5 \\
+G_2 &= R_3 + \gamma G_3 = -1 + 0{,}5\cdot 3{,}5 = 0{,}75 \\
+G_1 &= R_2 + \gamma G_2 = 0 + 0{,}5\cdot 0{,}75 = 0{,}375 \\
+G_0 &= R_1 + \gamma G_1 = 2 + 0{,}5\cdot 0{,}375 = 2{,}1875
+\end{align*}
+\end{respuesta}
+
+\eje{4. MDP (interpretaci\'on)}
+\pregunta{Explique qu\'e representa el \textbf{factor de descuento} $\gamma$ en $G_t = \sum_{k=t+1}^{T}\gamma^{\,k-t-1}R_k$. \textquestiondown Qu\'e comportamiento induce $\gamma=0$ y qu\'e comportamiento induce $\gamma\to 1$? Enuncie adem\'as la \textbf{propiedad de Markov}.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} $\gamma \in [0,1]$ determina cu\'anto valora el agente las recompensas futuras frente a las inmediatas. Con \textbf{$\gamma=0$} el agente es \emph{miope}: solo le importa la recompensa inmediata $R_{t+1}$. Con \textbf{$\gamma\to 1$} valora casi por igual recompensas lejanas y cercanas (agente ``previsor''). Sirve la analog\'ia con la inflaci\'on: una inflaci\'on alta (que licua el valor del dinero futuro) equivale a un $\gamma$ bajo.
+
+La \textbf{propiedad de Markov} dice que la probabilidad del pr\'oximo estado y recompensa depende \emph{solo} del estado y la acci\'on actuales, y no de la historia previa: $p(s',r\mid s,a)=\Pr\{S_t{=}s',R_t{=}r \mid S_{t-1}{=}s, A_{t-1}{=}a\}$. Esto obliga a definir los estados de modo que incluyan toda la informaci\'on del pasado relevante para el futuro.
+\end{respuesta}
+
+\eje{5. Q-learning (pr\'actico)}
+\pregunta{Ambiente con estados $\{s_1, s_2\}$ y acciones $\{\leftarrow, \rightarrow\}$ (tarea continua). Se ejecuta Q-learning con $\alpha=0{,}5$, $\gamma=0{,}5$ y $Q$ inicializada en 0. La trayectoria es: $s_1, \rightarrow, +4, s_2, \rightarrow, +2, s_1, \rightarrow, +8, s_2, \dots$ Hacer el seguimiento de $Q$ tras cada acci\'on y dar la pol\'itica greedy resultante.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Regla: $Q(S,A)\leftarrow Q(S,A) + \alpha\big[R + \gamma\max_a Q(S',a) - Q(S,A)\big]$.
+
+\textbf{Paso 1} ($s_1,\rightarrow,+4,s_2$): $\max_a Q(s_2,a)=0$.
+$\;Q(s_1,\rightarrow)=0+0{,}5[\,4+0{,}5\cdot 0-0\,]=\mathbf{2}$.
+
+\textbf{Paso 2} ($s_2,\rightarrow,+2,s_1$): $\max_a Q(s_1,a)=\max(2,0)=2$.
+$\;Q(s_2,\rightarrow)=0+0{,}5[\,2+0{,}5\cdot 2-0\,]=\mathbf{1{,}5}$.
+
+\textbf{Paso 3} ($s_1,\rightarrow,+8,s_2$): $\max_a Q(s_2,a)=\max(1{,}5,0)=1{,}5$.
+$\;Q(s_1,\rightarrow)=2+0{,}5[\,8+0{,}5\cdot 1{,}5-2\,]=2+0{,}5\cdot 6{,}75=\mathbf{5{,}375}$.
+
+Tabla final: $Q(s_1,\rightarrow)=5{,}375$, $Q(s_2,\rightarrow)=1{,}5$, resto $=0$.
+\textbf{Pol\'itica greedy}: en $s_1$ elegir $\rightarrow$; en $s_2$ elegir $\rightarrow$.
+\end{respuesta}
+
+\eje{6. TD (interpretaci\'on)}
+\pregunta{Escriba las reglas de actualizaci\'on de \textbf{SARSA} y \textbf{Q-learning} y explique cu\'al es la \'unica diferencia entre ambas. \textquestiondown Por qu\'e se dice que SARSA es \emph{on-policy} y Q-learning \emph{off-policy}?}
+
+\begin{respuesta}
+\textit{Respuesta posible.}
+\[
+\text{SARSA:}\quad Q(S,A)\leftarrow Q(S,A)+\alpha\big[R+\gamma\,Q(S',A')-Q(S,A)\big]
+\]
+\[
+\text{Q-learning:}\quad Q(S,A)\leftarrow Q(S,A)+\alpha\big[R+\gamma\,\max_a Q(S',a)-Q(S,A)\big]
+\]
+La \'unica diferencia est\'a en c\'omo estiman el retorno desde $S'$: SARSA usa $Q(S',A')$, donde $A'$ es la acci\'on que \textbf{realmente} va a tomar seg\'un su pol\'itica $\varepsilon$-greedy; Q-learning usa $\max_a Q(S',a)$, es decir asume una pol\'itica \textbf{greedy pura} para estimar el retorno.
+
+Por eso SARSA es \textbf{on-policy}: eval\'ua y mejora la misma pol\'itica que usa para actuar (incluye el efecto de la exploraci\'on). Q-learning es \textbf{off-policy}: la pol\'itica que estima (greedy) est\'a \emph{desacoplada} de la que sigue para explorar ($\varepsilon$-greedy).
+\end{respuesta}
+
+\end{document}

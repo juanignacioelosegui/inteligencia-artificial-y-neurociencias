@@ -1,0 +1,128 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{mdframed}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\newmdenv[
+    linecolor=gray!50,
+    linewidth=0.5pt,
+    backgroundcolor=gray!8,
+    skipabove=6pt,
+    skipbelow=6pt,
+    innertopmargin=6pt,
+    innerbottommargin=6pt,
+]{respuesta}
+
+\newcommand{\pregunta}[1]{\subsection{#1}}
+\newcommand{\eje}[1]{\subsubsection{#1}}
+\newcommand{\argmax}{\operatorname*{arg\,m\acute{a}x}}
+
+\title{\textbf{Modelo de Parcial 2 -- Aprendizaje por Refuerzo} \\
+\large Inteligencia Artificial y Neurociencias \\ Universidad Torcuato Di Tella}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{mdframed}[linecolor=black, linewidth=0.7pt]
+\textbf{Formato.} Combina \textbf{ejercicios pr\'acticos} (seguimiento manual de algoritmos, c\'alculo de retornos y valores) con \textbf{preguntas de interpretaci\'on} sobre las f\'ormulas y conceptos. Debajo de cada consigna se da una \emph{respuesta posible} a modo de gu\'ia.
+\end{mdframed}
+
+\eje{1. Bandidos: actualizaci\'on incremental (pr\'actico)}
+\pregunta{Un algoritmo de bandidos con promedio muestral tiene, para la acci\'on $a$, la estimaci\'on $Q_n(a)=3$ luego de haberla tomado $n-1=4$ veces. Se vuelve a elegir $a$ y se obtiene $R_n = 8$. (a)~Calcular $Q_{n+1}(a)$ con la f\'ormula incremental. (b)~\textquestiondown Por qu\'e esta forma es preferible a guardar todas las recompensas y promediar?}
+
+\begin{respuesta}
+\textit{Respuesta posible.} (a) $n=5$, entonces
+\[
+Q_{n+1}(a) = Q_n + \tfrac{1}{n}\big[R_n - Q_n\big] = 3 + \tfrac{1}{5}\,[\,8-3\,] = 3 + 1 = 4.
+\]
+(b) La actualizaci\'on incremental requiere almacenar solo $Q_n$ y $n$ (memoria $O(1)$) y cada actualizaci\'on cuesta $O(1)$, en vez de guardar la lista completa de recompensas y recomputar la media (memoria y tiempo crecientes con la cantidad de muestras).
+\end{respuesta}
+
+\eje{2. Bandidos (interpretaci\'on)}
+\pregunta{\textquestiondown Es equivalente usar una pol\'itica $\varepsilon$-greedy con $\varepsilon=0{,}1$ durante 1000 pasos a primero ejecutar 100 pasos puramente exploratorios y luego 900 pasos puramente greedy? Justifique. Explique tambi\'en la idea de los \textbf{valores iniciales optimistas} como forma de exploraci\'on.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} \textbf{No} son equivalentes. Con $\varepsilon$-greedy la exploraci\'on est\'a \textbf{distribuida} a lo largo de todo el proceso: sigue explorando (aprox.\ un 10\,\% del tiempo) incluso al final, lo que le permite corregir estimaciones err\'oneas y adaptarse (\'util si el problema no es estacionario). El esquema ``explorar primero, explotar despu\'es'' fija las estimaciones tras la fase inicial: si por azar una buena acci\'on qued\'o subestimada en esos primeros pasos, ya nunca la vuelve a probar. Adem\'as, durante la fase greedy no obtiene m\'as informaci\'on de las acciones no elegidas.
+
+\textbf{Valores iniciales optimistas}: se inicializa $Q_1(a)$ con un valor muy alto para toda $a$. Como toda recompensa real resulta ``decepcionante'' frente a la estimaci\'on inflada, el error $[R-Q]$ es negativo y el agente se ve \emph{empujado} a probar las otras acciones (que siguen con valor alto). As\'i se logra una exploraci\'on inicial sistem\'atica sin necesidad de aleatoriedad. Su limitaci\'on: es un mecanismo transitorio, poco \'util en problemas no estacionarios.
+\end{respuesta}
+
+\eje{3. MDP: funciones de valor (pr\'actico)}
+\pregunta{Ambiente determin\'istico en l\'inea: $A \to B \to C \to D$, con $D$ terminal. Recompensas: $A\to B$ da $1$, $B\to C$ da $2$, $C\to D$ da $3$. Con la pol\'itica $\pi$ que avanza siempre a la derecha, calcular $v_\pi(A), v_\pi(B), v_\pi(C)$ para $\gamma = 0$, $\gamma = 0{,}5$ y $\gamma = 1$.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Usando $v_\pi(s) = r + \gamma\, v_\pi(s')$ desde el final ($v_\pi(D)=0$):
+\[
+v_\pi(C)=3+\gamma\cdot 0=3,\qquad v_\pi(B)=2+\gamma\, v_\pi(C),\qquad v_\pi(A)=1+\gamma\, v_\pi(B).
+\]
+\begin{center}
+\begin{tabular}{c c c c}
+\toprule
+$\gamma$ & $v_\pi(A)$ & $v_\pi(B)$ & $v_\pi(C)$ \\
+\midrule
+$0$   & $1$    & $2$   & $3$ \\
+$0{,}5$ & $2{,}75$ & $3{,}5$ & $3$ \\
+$1$   & $6$    & $5$   & $3$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+(Con $\gamma=0{,}5$: $v_\pi(B)=2+0{,}5\cdot3=3{,}5$; $v_\pi(A)=1+0{,}5\cdot3{,}5=2{,}75$.
+Con $\gamma=1$: $v_\pi(B)=5$, $v_\pi(A)=6$.) Como $\pi$ es determin\'istica, $q_\pi(s,\rightarrow)=v_\pi(s)$ para la acci\'on seguida.
+\end{respuesta}
+
+\eje{4. Monte Carlo (pr\'actico)}
+\pregunta{Ambiente con estados $\{s_1, s_2, s_3\}$ ($s_3$ terminal) y acciones $\{a,b\}$. Se corre Monte Carlo para estimar $\pi_*$ con $\gamma=1$ y $Q$ inicializada en 0. Episodios:
+\emph{Ep.\ 1}: $s_1, a, {+}2, s_2, a, {+}3, s_3$; \quad \emph{Ep.\ 2}: $s_1, a, {+}1, s_2, b, {+}4, s_3$.
+Indicar $\mathrm{Retornos}(S,A)$ y $Q(S,A)$ al final de cada episodio, y la acci\'on greedy en cada estado al comenzar el tercer episodio.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Los retornos ($\gamma=1$) son la suma de recompensas desde cada par $(S,A)$.
+
+\emph{Fin Ep.\ 1}: $G(s_1,a)=2+3=5$, $G(s_2,a)=3$.
+$\;\mathrm{Ret}(s_1,a)=[5]\Rightarrow Q(s_1,a)=5$;\; $\mathrm{Ret}(s_2,a)=[3]\Rightarrow Q(s_2,a)=3$.
+
+\emph{Fin Ep.\ 2}: $G(s_1,a)=1+4=5$, $G(s_2,b)=4$.
+$\;\mathrm{Ret}(s_1,a)=[5,5]\Rightarrow Q(s_1,a)=5$;\; $\mathrm{Ret}(s_2,b)=[4]\Rightarrow Q(s_2,b)=4$.
+
+Tabla: $Q(s_1,a)=5,\ Q(s_1,b)=0,\ Q(s_2,a)=3,\ Q(s_2,b)=4$.
+\textbf{Greedy} al comenzar Ep.\ 3: en $s_1$ elegir $a$ ($5>0$); en $s_2$ elegir $b$ ($4>3$).
+\end{respuesta}
+
+\eje{5. MC vs TD (interpretaci\'on)}
+\pregunta{\textquestiondown Cu\'al es la diferencia fundamental entre los m\'etodos Monte Carlo y los de Diferencias Temporales en cu\'ando y c\'omo actualizan $Q$? Defina \textbf{bootstrapping} y d\'e una situaci\'on donde TD tenga ventaja pr\'actica sobre MC.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} \textbf{Monte Carlo} espera al \textbf{final del episodio} y actualiza usando el retorno real medido $G_t$: $Q(S_t,A_t)\leftarrow Q(S_t,A_t)+\alpha[G_t - Q(S_t,A_t)]$. \textbf{TD} actualiza \textbf{tras cada paso}, sin esperar el final, usando $R_{t+1}+\gamma Q(S_{t+1},A_{t+1})$ como objetivo.
+
+\textbf{Bootstrapping}: estimar un valor a partir de \emph{otras estimaciones} propias (aqu\'i, $Q(S_{t+1},\cdot)$) en lugar de esperar el resultado real completo. TD hace bootstrapping; MC no.
+
+\textbf{Ventaja de TD}: en tareas \textbf{continuas} (sin fin) o con episodios muy largos, MC no podr\'ia actualizar (no hay retorno final que medir), mientras que TD aprende ``sobre la marcha''. Ejemplo: un agente en un videojuego con muchos estados aprende en tiempo real con TD, mientras que MC tendr\'ia que completar la partida entera para cada actualizaci\'on.
+\end{respuesta}
+
+\eje{6. Deep Q-Learning (interpretaci\'on)}
+\pregunta{\textquestiondown Por qu\'e los m\'etodos tabulares no sirven en problemas como jugar al Atari desde los p\'ixeles? \textquestiondown Qu\'e se hace en su lugar? Explique brevemente para qu\'e sirven el \textbf{replay de experiencias} y la \textbf{target network} en DQN.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Los m\'etodos tabulares guardan un valor por cada par $(s,a)$ en una tabla $Q$, lo cual es imposible cuando el espacio de estados $\mathcal{S}$ es gigantesco: la cantidad de pantallas posibles de un juego es combinatoriamente enorme, y adem\'as dos pantallas casi id\'enticas cuentan como estados distintos (no hay generalizaci\'on). En su lugar se usa \textbf{aproximaci\'on de la funci\'on de valor}: se reemplaza la tabla por una funci\'on parametrizada $\hat q(s,a,\mathbf{w})$ (una red neuronal con pesos $\mathbf{w}$, $d \ll |\mathcal{S}|$) que se ajusta con descenso por gradiente (semi-gradiente), permitiendo generalizar a estados nunca vistos.
+
+\textbf{Replay de experiencias}: se almacenan las transiciones $e_t=(S_t,A_t,R_{t+1},S_{t+1})$ en una memoria y cada actualizaci\'on se hace sobre un \emph{minibatch} muestreado al azar; esto rompe la correlaci\'on temporal entre muestras consecutivas y estabiliza el entrenamiento. \textbf{Target network}: una copia de la red que se usa para computar el objetivo y se actualiza solo cada cierta cantidad de iteraciones; al mantener el objetivo ``fijo'' un rato, evita que la red persiga un blanco que se mueve con cada paso.
+\end{respuesta}
+
+\end{document}
