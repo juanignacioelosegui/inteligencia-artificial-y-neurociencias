@@ -1,0 +1,271 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\newcommand{\argmax}{\operatorname*{arg\,m\acute{a}x}}
+
+\title{\textbf{Resumen -- Aprendizaje por Refuerzo} \\
+\large Inteligencia Artificial y Neurociencias \\ Universidad Torcuato Di Tella}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+%% ============================================================
+\section{Clase 0 -- Introducci\'on al Aprendizaje por Refuerzo}
+%% ============================================================
+
+El \textbf{Aprendizaje por Refuerzo} (RL) es un paradigma en el que un \textbf{agente} aprende a comportarse interactuando con un \textbf{ambiente}: ejecuta \textbf{acciones}, observa el nuevo estado del ambiente y recibe \textbf{recompensas}. El objetivo es aprender a actuar de modo de maximizar la recompensa acumulada.
+
+\subsection{Tres caracter\'isticas distintivas}
+\begin{itemize}[nosep]
+    \item \textbf{Prueba y error:} nadie le dice al agente cu\'al es la acci\'on correcta; la descubre probando y midiendo consecuencias.
+    \item \textbf{Recompensas demoradas:} una acci\'on puede tener efecto sobre recompensas futuras, no solo la inmediata (el problema de \emph{asignaci\'on de cr\'edito}).
+    \item \textbf{Balance exploraci\'on/explotaci\'on:} el agente debe \emph{explotar} lo que ya sabe que da buenas recompensas, pero tambi\'en \emph{explorar} para descubrir mejores opciones.
+\end{itemize}
+
+\subsection{RL vs.\ otros paradigmas}
+\begin{itemize}[nosep]
+    \item \textbf{Aprendizaje supervisado:} aprende de ejemplos etiquetados (entrada $\to$ salida correcta). En RL no hay etiquetas, solo se\~nales de recompensa.
+    \item \textbf{Aprendizaje no supervisado:} busca estructura oculta en datos sin etiquetar. RL no busca estructura, busca \emph{maximizar recompensa}.
+\end{itemize}
+Bibliograf\'ia de referencia: Sutton \& Barto, \textit{Reinforcement Learning: An Introduction} (2018).
+
+%% ============================================================
+\section{Clase 1 -- Bandidos de $k$ brazos}
+%% ============================================================
+
+El problema de \textbf{bandidos de $k$ brazos} es la versi\'on m\'as simple de RL: hay un \'unico estado y $k$ acciones posibles. En cada paso el agente elige una acci\'on $a$ y recibe una recompensa. Cada elecci\'on es \textbf{independiente} de las anteriores (no hay estados que cambien).
+
+\subsection{Valor de una acci\'on}
+El \textbf{valor real} de una acci\'on es la recompensa esperada al tomarla:
+\[
+    q_*(a) \doteq \mathbb{E}[R_t \mid A_t = a].
+\]
+Como $q_*(a)$ es desconocido, el agente mantiene una \textbf{estimaci\'on} $Q_t(a)$. El m\'etodo m\'as simple (\emph{sample-average}) promedia las recompensas obtenidas al tomar $a$:
+\[
+    Q_t(a) = \frac{\text{suma de recompensas al tomar } a \text{ antes de } t}{\text{cantidad de veces que se tom\'o } a}.
+\]
+
+\subsection{Greedy, $\varepsilon$-greedy y exploraci\'on}
+\begin{itemize}[nosep]
+    \item \textbf{Greedy:} elegir siempre $A_t = \argmax_a Q_t(a)$. Explota, pero nunca explora, y puede quedar atrapado en una acci\'on sub\'optima.
+    \item \textbf{$\varepsilon$-greedy:} con probabilidad $1-\varepsilon$ elige la acci\'on greedy, con probabilidad $\varepsilon$ elige una acci\'on al azar. La exploraci\'on queda \textbf{distribuida} a lo largo de todo el proceso.
+\end{itemize}
+
+\subsection{Actualizaci\'on incremental}
+En vez de guardar todas las recompensas, se actualiza la estimaci\'on paso a paso:
+\[
+    Q_{n+1} = Q_n + \frac{1}{n}\,\big[R_n - Q_n\big].
+\]
+Es un caso de la regla general de aprendizaje:
+\[
+    \text{NuevaEst} \leftarrow \text{ViejaEst} + \text{TasaApr}\,\big[\text{Objetivo} - \text{ViejaEst}\big].
+\]
+Ventaja: memoria y c\'omputo $O(1)$ por paso, sin necesidad de almacenar toda la historia.
+
+\subsection{Problemas no estacionarios}
+Si $q_*(a)$ cambia con el tiempo, conviene usar un \textbf{paso constante} $\alpha \in (0,1]$ en lugar de $1/n$:
+\[
+    Q_{n+1} = Q_n + \alpha\,\big[R_n - Q_n\big].
+\]
+Esto da un \textbf{promedio con pesos exponencialmente decrecientes}: da m\'as peso a las recompensas recientes, permitiendo seguir cambios en el ambiente.
+
+\subsection{Valores iniciales optimistas}
+Se inicializa $Q_1(a)$ con un valor alto para toda $a$. Como toda recompensa real ``decepciona'' frente a la estimaci\'on inflada, el agente es empujado a probar las dem\'as acciones: exploraci\'on inicial sistem\'atica \emph{sin} aleatoriedad. Limitaci\'on: es un mecanismo transitorio, poco \'util en problemas no estacionarios.
+
+%% ============================================================
+\section{Clase 2 -- Procesos de Decisi\'on de Markov (MDP)}
+%% ============================================================
+
+Los \textbf{MDP} extienden los bandidos incorporando \textbf{estados} $s \in \mathcal{S}$: modelan la \textbf{toma de decisiones secuenciales}, donde cada decisi\'on afecta a las siguientes. Ahora se estima:
+\begin{itemize}[nosep]
+    \item $v_*(s)$: el \textbf{valor del estado} $s$.
+    \item $q_*(s,a)$: el \textbf{valor de la acci\'on} $a$ en el estado $s$.
+\end{itemize}
+
+\subsection{Definici\'on formal}
+Un MDP es una tupla $(\mathcal{S}, \mathcal{A}, \mathcal{R}, p)$, con estados, acciones y recompensas (conjuntos finitos), y $p$ la din\'amica. El tiempo es discreto: $t = 0,1,2,\dots$ Una \textbf{trayectoria} es una secuencia $S_0, A_0, R_1, S_1, A_1, R_2, \dots$
+
+La din\'amica del ambiente queda caracterizada por:
+\[
+    p(s', r \mid s, a) \doteq \Pr\{S_t = s', R_t = r \mid S_{t-1} = s, A_{t-1} = a\},
+\]
+con $\sum_{s'}\sum_r p(s', r \mid s, a) = 1$. Si el ambiente es \textbf{determin\'istico}, esta probabilidad vale $1$ para un \'unico $(s', r)$; en general es \textbf{estoc\'astico}.
+
+\subsection{Propiedad de Markov}
+La probabilidad de $(S_t, R_t)$ depende \textbf{solo} de $(S_{t-1}, A_{t-1})$, no de la historia previa. Esto restringe c\'omo definimos los estados: deben incluir toda la informaci\'on del pasado relevante para el futuro.
+
+\subsection{Retornos y episodios}
+El objetivo del agente es maximizar el \textbf{retorno} (ganancia acumulada esperada):
+\[
+    G_t \doteq R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \dots = \sum_{k=t+1}^{T} \gamma^{k-t-1} R_k,
+\]
+donde $\gamma \in [0,1]$ es el \textbf{factor de descuento}. Forma recursiva: $G_t = R_{t+1} + \gamma\, G_{t+1}$. En tareas \textbf{episódicas} hay un estado terminal ($T$ finito); en tareas \textbf{continuas} $T = \infty$.
+
+\textbf{Factor de descuento $\gamma$:} es un par\'ametro del agente que fija cu\'anto valora recompensas cercanas vs.\ lejanas. Con $\gamma = 0$ el agente es \emph{miope} (solo cuenta la recompensa inmediata); con $\gamma \to 1$ valora m\'as las recompensas lejanas. \emph{Analog\'ia:} una tasa de inflaci\'on alta act\'ua como $\gamma$ bajo, licuando recompensas futuras.
+
+\subsection{Pol\'iticas y funciones de valor}
+Una \textbf{pol\'itica} $\pi(a \mid s)$ es la probabilidad de ejecutar $a$ en $s$ (puede ser determin\'istica o estoc\'astica).
+\begin{align*}
+    v_\pi(s) &\doteq \mathbb{E}_\pi[G_t \mid S_t = s] & \text{(valor del estado)} \\
+    q_\pi(s,a) &\doteq \mathbb{E}_\pi[G_t \mid S_t = s, A_t = a] & \text{(valor de la acci\'on)}
+\end{align*}
+Propiedad: $q_\pi(s,a) = \mathbb{E}_\pi[R_{t+1} + \gamma\, v_\pi(S_{t+1}) \mid S_t = s, A_t = a]$.
+
+\subsection{Pol\'iticas y valores \'optimos}
+$\pi \geq \pi'$ sii $v_\pi(s) \geq v_{\pi'}(s)$ para todo $s$. Una pol\'itica $\pi_*$ es \textbf{\'optima} si domina a toda otra. Las \textbf{funciones de valor \'optimas} son:
+\[
+    v_*(s) \doteq \max_\pi v_\pi(s), \qquad q_*(s,a) \doteq \max_\pi q_\pi(s,a).
+\]
+
+\subsection{B\'usqueda de pol\'iticas \'optimas}
+$v_*$ y $q_*$ son desconocidas; el agente las estima.
+\begin{itemize}[nosep]
+    \item \textbf{M\'etodos \emph{model-based}:} si conoci\'eramos $p(s', r \mid s, a)$ podr\'iamos usar programaci\'on din\'amica (\emph{Value Iteration}). Pero casi nunca conocemos $p$: interés te\'orico.
+    \item \textbf{M\'etodos \emph{model-free}:} no necesitan $p$; aprenden interactuando. Ejemplos: Monte Carlo y Q-Learning.
+\end{itemize}
+
+%% ============================================================
+\section{Clase 3 -- M\'etodos Monte Carlo}
+%% ============================================================
+
+Los m\'etodos \textbf{Monte Carlo} (MC) obtienen soluciones mediante \textbf{pruebas aleatorias repetidas}. En RL se basan en \textbf{generar episodios, observar y aprender de lo ocurrido}. Como no se conoce $p(s', r \mid s, a)$, el agente aprende con interacciones \textbf{reales} con el ambiente.
+
+\subsection{Algoritmo MC para estimar $\pi_*$}
+\begin{enumerate}[nosep]
+    \item Inicializar $\pi$ al azar, $Q(s,a)$ arbitrario, y $\text{Retornos}(s,a)$ como listas vac\'ias.
+    \item Generar un episodio completo siguiendo $\pi$: $S_0, A_0, R_1, \dots, S_{T-1}, A_{T-1}, R_T$.
+    \item Para cada paso $t$: calcular $G_t = \sum_{k=t+1}^{T} \gamma^{k-t-1} R_k$, agregarlo a $\text{Retornos}(S_t, A_t)$, y actualizar $Q(S_t, A_t) \leftarrow \text{promedio}(\text{Retornos}(S_t, A_t))$.
+    \item Mejorar la pol\'itica de forma greedy: $\pi(S_t) \leftarrow \argmax_a Q(S_t, a)$.
+\end{enumerate}
+$Q(s,a)$ converge a $q_*(s,a)$ a medida que la cantidad de visitas a $(s,a)$ tiende a infinito.
+
+\subsection{Problema de exploraci\'on y versi\'on final}
+Con una pol\'itica puramente greedy, muchos pares $(s,a)$ se visitar\'ian poqu\'isimo (o nunca), y sus estimaciones ser\'ian malas. Soluci\'on: usar una pol\'itica \textbf{$\varepsilon$-greedy} que garantice explorar todos los pares:
+\[
+    \pi(a \mid s) =
+    \begin{cases}
+        1 - \varepsilon + \dfrac{\varepsilon}{|\mathcal{A}(s)|} & \text{si } a = A^* \\[2mm]
+        \dfrac{\varepsilon}{|\mathcal{A}(s)|} & \text{si } a \neq A^*
+    \end{cases}
+\]
+donde $A^* = \argmax_a Q(s, a)$. La versi\'on final devuelve una pol\'itica estoc\'astica $\pi \approx \pi_*$.
+
+%% ============================================================
+\section{Clase 4 -- Diferencias Temporales: SARSA y Q-learning}
+%% ============================================================
+
+\subsection{MC vs.\ TD}
+Ambos parten de la regla $\text{NuevaEst} \leftarrow \text{ViejaEst} + \text{TasaApr}\,[\text{Objetivo} - \text{ViejaEst}]$, pero difieren en \textbf{cu\'ando} y con qu\'e objetivo actualizan:
+\begin{itemize}[nosep]
+    \item \textbf{Monte Carlo:} espera al \textbf{final del episodio} y usa el retorno real $G_t$:
+    \[
+        Q(S_t, A_t) \leftarrow Q(S_t, A_t) + \alpha\,[G_t - Q(S_t, A_t)].
+    \]
+    \item \textbf{Diferencias Temporales (TD):} actualiza \textbf{tras cada paso}, sin esperar el final, usando $R_{t+1} + \gamma\, Q(S_{t+1}, A_{t+1})$ como objetivo:
+    \[
+        Q(S_t, A_t) \leftarrow Q(S_t, A_t) + \alpha\,[R_{t+1} + \gamma\, Q(S_{t+1}, A_{t+1}) - Q(S_t, A_t)].
+    \]
+\end{itemize}
+\textbf{Bootstrapping:} estimar un valor a partir de \emph{otras estimaciones} propias ($Q(S_{t+1}, \cdot)$) en vez de esperar el resultado real. TD hace bootstrapping; MC no. Ventaja de TD: aprende ``sobre la marcha'', \'util en tareas continuas o de episodios muy largos.
+
+\subsection{SARSA (on-policy)}
+Estima $\pi_*$ usando \textbf{la misma pol\'itica} $\varepsilon$-greedy para elegir la acci\'on siguiente $A'$ y para estimar el retorno. La actualizaci\'on usa el par real $(S', A')$ que efectivamente se va a tomar:
+\[
+    Q(S, A) \leftarrow Q(S, A) + \alpha\,[R + \gamma\, Q(S', A') - Q(S, A)].
+\]
+Por usar la pol\'itica real en el objetivo, es un m\'etodo \textbf{on-policy}.
+
+\subsection{Q-learning (off-policy)}
+Cambia el objetivo por el m\'aximo sobre las acciones, desacoplando la estimaci\'on del retorno de la pol\'itica seguida:
+\[
+    Q(S, A) \leftarrow Q(S, A) + \alpha\,[R + \gamma \max_a Q(S', a) - Q(S, A)].
+\]
+Asume una pol\'itica greedy pura para estimar el retorno, sin importar qu\'e acci\'on se tome de verdad (que sigue siendo $\varepsilon$-greedy). Por eso es un m\'etodo \textbf{off-policy}. La tasa $\alpha \in (0,1]$ controla la relevancia de la informaci\'on reciente (\'util en ambientes no estacionarios).
+
+%% ============================================================
+\section{Clase 5 -- Deep Q-Learning (DQL)}
+%% ============================================================
+
+\subsection{L\'imite de los m\'etodos tabulares}
+Los m\'etodos tabulares guardan un valor por cada par $(s,a)$ en una tabla $Q$. Esto es imposible cuando $\mathcal{S}$ es enorme (e.g.\ los p\'ixeles de una pantalla de Atari): la cantidad de estados es combinatoriamente gigantesca y, adem\'as, dos pantallas casi id\'enticas cuentan como estados distintos (no hay \textbf{generalizaci\'on}).
+
+\subsection{Aproximaci\'on de la funci\'on de valor}
+Se reemplaza la tabla por una funci\'on parametrizada $\hat q(s, a, \mathbf{w})$ (e.g.\ una red neuronal con pesos $\mathbf{w} \in \mathbb{R}^d$, con $d \ll |\mathcal{S}|$), que permite generalizar a estados nunca vistos. Se define el error cuadr\'atico:
+\[
+    \overline{\text{QE}}(\mathbf{w}) \doteq \sum_{s}\sum_{a} \big[q_*(s,a) - \hat q(s, a, \mathbf{w})\big]^2.
+\]
+Como $\hat q$ es diferenciable respecto de $\mathbf{w}$, se ajusta con \textbf{descenso por gradiente estoc\'astico} (SGD). Combinando SGD con bootstrapping ($q_*(S_t, A_t) \approx R_{t+1} + \gamma \max_a \hat q(S_{t+1}, a, \mathbf{w})$) se obtiene la regla \textbf{semi-gradiente}:
+\[
+    \mathbf{w} \leftarrow \mathbf{w} + \alpha\,[R + \gamma \max_a \hat q(S', a, \mathbf{w}) - \hat q(S, A, \mathbf{w})]\,\nabla \hat q(S, A, \mathbf{w}).
+\]
+No hay garant\'ia de convergencia (a diferencia del caso tabular), pero se usa mucho en la pr\'actica.
+
+\subsection{Detalles de implementaci\'on (Mnih et al.\ 2013, 2015)}
+El paper \textit{Playing Atari with Deep RL} / \textit{Human-level control} aprendi\'o a jugar Atari desde los p\'ixeles con una red convolucional. Dos t\'ecnicas clave para estabilizar el entrenamiento:
+\begin{itemize}[nosep]
+    \item \textbf{Replay de experiencias:} cada transici\'on $e_t = (S_t, A_t, R_{t+1}, S_{t+1})$ se guarda en una \emph{memoria} $D$; cada actualizaci\'on de $\mathbf{w}$ se hace sobre un \emph{minibatch} muestreado al azar. Esto rompe la correlaci\'on temporal entre muestras consecutivas.
+    \item \textbf{Target network:} una copia de la red (\emph{Q-network}) usada para computar el objetivo, que se actualiza solo cada cierta cantidad de iteraciones. Mantener el objetivo ``fijo'' un rato evita perseguir un blanco que se mueve con cada paso.
+\end{itemize}
+El tama\~no de la memoria, el del minibatch y la frecuencia de actualizaci\'on de la target network son \textbf{hiperpar\'ametros} (adem\'as de $\alpha$, $\varepsilon$ y $\gamma$).
+
+%% ============================================================
+\section{Clase 6 -- Temas Avanzados}
+%% ============================================================
+
+\subsection{M\'etodos de gradiente de pol\'iticas}
+En vez de aproximar $q_*(s,a)$ y derivar una pol\'itica, se aprende \textbf{directamente} una pol\'itica parametrizada $\pi(a \mid s, \boldsymbol{\theta})$. \'Util cuando hay demasiadas acciones o acciones \emph{continuas} (redes el\'ectricas, trading, rob\'otica, LLMs). Con una m\'etrica de desempe\~no $J(\boldsymbol{\theta})$ se hace ascenso por gradiente:
+\[
+    \boldsymbol{\theta}_{t+1} = \boldsymbol{\theta}_t + \alpha\, \nabla J(\boldsymbol{\theta}_t).
+\]
+
+\textbf{REINFORCE} (gradiente de pol\'iticas tipo MC): tras generar un episodio, para cada paso actualiza
+\[
+    \boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\, G\, \nabla \ln \pi(A_t \mid S_t, \boldsymbol{\theta}).
+\]
+Ajusta directamente la probabilidad de elegir $A_t$: sube o baja proporcionalmente al retorno observado $G$.
+
+\textbf{Actor-Critic:} variante TD de REINFORCE. Reemplaza $G_t$ por el \textbf{error TD} usando bootstrapping:
+\[
+    \boldsymbol{\theta}_{t+1} \doteq \boldsymbol{\theta}_t + \alpha\,\big(R_{t+1} + \gamma\, \hat v(S_{t+1}, \mathbf{w}) - \hat v(S_t, \mathbf{w})\big)\, \nabla \ln \pi(A_t \mid S_t, \boldsymbol{\theta}).
+\]
+La red $\pi$ es el \textbf{actor} (elige acciones) y $\hat v$ el \textbf{cr\'itico} (eval\'ua estados). \textbf{PPO} (Proximal Policy Optimization) extiende Actor-Critic restringiendo cu\'anto puede cambiar $\pi$ por update: m\'as estable, estado del arte en muchos dominios.
+
+\subsection{Monte Carlo Tree Search (MCTS)}
+Para juegos como Go, la planificaci\'on cl\'asica (Minimax) no alcanza: $\sim$250 movidas por posici\'on y sin buenas heur\'isticas para podar. Idea: usar \textbf{trayectorias simuladas} desde el estado actual hasta el final, eligiendo acciones seg\'un una pol\'itica y aproximando el ambiente con un modelo (el agente \emph{imagina}, no interact\'ua con el ambiente real).
+
+\textbf{M\'etodos Rollout:} simular trayectorias desde cada acci\'on de $S$, actualizar solo $(S,A)$, y luego elegir la acci\'on de mayor valor estimado. La \emph{pol\'itica rollout} es r\'apida (p.ej.\ aleatoria). No se almacenan las mejoras: no es aprendizaje real.
+
+\textbf{MCTS} s\'i almacena las estimaciones MC en un \textbf{\'arbol} con ra\'iz en $S$, que se expande incrementalmente. Cuatro etapas por iteraci\'on:
+\begin{enumerate}[nosep]
+    \item \textbf{Selecci\'on:} bajar por el \'arbol siguiendo la \emph{pol\'itica del \'arbol} (balancea exploraci\'on/explotaci\'on, p.ej.\ $\varepsilon$-greedy) hasta una hoja.
+    \item \textbf{Expansi\'on:} agregar uno o m\'as hijos a la hoja.
+    \item \textbf{Simulaci\'on:} completar la trayectoria con la \emph{pol\'itica rollout}.
+    \item \textbf{Backup:} propagar el retorno para actualizar los valores $(s,a)$ del \'arbol.
+\end{enumerate}
+Tras cierto tiempo, se elige en la ra\'iz la acci\'on de mayor valor. Parte del \'arbol se reusa; el resto se descarta.
+
+\subsection{AlphaGo}
+\begin{itemize}[nosep]
+    \item \textbf{AlphaGo} (2015--2016): MCTS + redes neuronales profundas (\emph{rollout policy}, \emph{policy network}, \emph{value network}), entrenadas con 30M de partidas humanas + gradiente de pol\'iticas. Venci\'o a Fan Hui (5--0) y a Lee Sedol (4--1).
+    \item \textbf{AlphaGo Zero} (2017): MCTS (sin rollouts) + una \'unica red (policy+value) entrenada por \textbf{self-play}, \emph{sin} dataset de partidas humanas. Aprendi\'o desde \textbf{tabula rasa}, venci\'o 100--0 a AlphaGo y descubri\'o estrategias nuevas.
+\end{itemize}
+
+\subsection{Preguntas para las Neurociencias}
+El RL abre preguntas sobre el cerebro: \textquestiondown c\'omo eligen los animales entre opciones con recompensas desconocidas? \textquestiondown Hay un mecanismo parecido a $\varepsilon$-greedy? \textquestiondown C\'omo se relaciona la recompensa de RL con la \textbf{dopamina}? \textquestiondown Representa el cerebro algo como una tabla $Q$ o una funci\'on de valor? \textquestiondown Existe un an\'alogo al \emph{replay de experiencias} (consolidaci\'on de memoria durante el sue\~no, rol del hipocampo en la planificaci\'on con rollouts)? \textquestiondown Hay estructuras an\'alogas al actor y al cr\'itico?
+
+\end{document}
