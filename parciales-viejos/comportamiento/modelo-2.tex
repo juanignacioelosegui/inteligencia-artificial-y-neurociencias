@@ -1,0 +1,84 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{mdframed}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\newmdenv[
+    linecolor=gray!50,
+    linewidth=0.5pt,
+    backgroundcolor=gray!8,
+    skipabove=6pt,
+    skipbelow=6pt,
+    innertopmargin=6pt,
+    innerbottommargin=6pt,
+]{respuesta}
+
+\newcommand{\pregunta}[1]{\subsection{#1}}
+\newcommand{\eje}[1]{\subsubsection{#1}}
+
+\title{\textbf{Modelo de Parcial 2 -- Neurociencia y Comportamiento} \\
+\large Inteligencia Artificial y Neurociencias \\ Universidad Torcuato Di Tella}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{mdframed}[linecolor=black, linewidth=0.7pt]
+\textbf{Formato} (igual al simulacro): en el parcial caen \textbf{cuatro preguntas}, una por cada eje tem\'atico. Responder cada una en \textbf{entre uno y tres p\'arrafos, no m\'as}. Los ejes son: (1)~Modelado computacional del comportamiento humano, (2)~Aprendizaje, (3)~Emociones, (4)~Gen\'etica del comportamiento. Debajo de cada pregunta se da una \emph{respuesta posible} a modo de gu\'ia.
+\end{mdframed}
+
+\eje{1. Modelado computacional del comportamiento humano}
+\pregunta{Describa los tres componentes del modelo cognitivo del art\'iculo de \textit{Four-in-a-Row} y explique c\'omo es la funci\'on de valor de los estados.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Los tres componentes son una \textbf{funci\'on de valor de los estados}, un \textbf{algoritmo de b\'usqueda} y un \textbf{mecanismo de atenci\'on}. La funci\'on de valor asigna un valor a cada estado del tablero como una \textbf{suma ponderada de atributos} (features): centro, dos-en-l\'inea conectado, dos-en-l\'inea no conectado, tres-en-l\'inea y cuatro-en-l\'inea. Se computa restando el valor de las features del oponente al de las features propias, y los pesos del jugador que va a mover se multiplican por una constante de escala, para capturar que el valor de una posici\'on depende de qui\'en juegue (un tres-en-l\'inea puede ser victoria inmediata o no seg\'un a qui\'en le toque).
+
+El \textbf{algoritmo de b\'usqueda} asume que ambos jugadores eligen la jugada que lleva al estado de mayor valor; expande el \'arbol, eval\'ua las posiciones con la funci\'on de valor y \textbf{poda} las ramas cuyo valor est\'a por debajo del mejor menos un umbral, deteni\'endose con cierta probabilidad en cada iteraci\'on (distribuci\'on geom\'etrica). El \textbf{mecanismo de atenci\'on} modela la atenci\'on selectiva descartando aleatoriamente algunas features antes de construir el \'arbol, agrega ruido gaussiano a los valores y contempla una tasa de lapsus (probabilidad de jugar al azar). El resultado: los expertos planifican m\'as profundo y tienen menos lapsus.
+\end{respuesta}
+
+\eje{2. Aprendizaje}
+\pregunta{Distinga los conceptos de \textbf{rasgo adaptativo} y \textbf{subproducto}, y d\'e al menos un ejemplo de cada uno (puede ser fisiol\'ogico o comportamental). \textquestiondown Qu\'e es, adem\'as, el ``ruido'' en este esquema?}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Un \textbf{rasgo adaptativo (adaptaci\'on)} es un rasgo que aument\'o el \'exito reproductivo del individuo, es decir, que fue una ventaja para la supervivencia y la reproducci\'on y por eso fue seleccionado. Un \textbf{subproducto (byproduct)} es una consecuencia de un rasgo adaptativo que no aport\'o ventaja evolutiva propia: ``viene de arrastre'' con otro rasgo que s\'i fue seleccionado.
+
+Ejemplos fisiol\'ogicos: la \textbf{hemoglobina} (adaptaci\'on, porque permite transportar ox\'igeno) y el \textbf{color rojo de la sangre} (subproducto, es s\'olo consecuencia del color de la hemoglobina); tambi\'en el cord\'on umbilical como adaptaci\'on y el ombligo como subproducto. Ejemplos comportamentales: el \textbf{gusto por el az\'ucar}, el impulso sexual o el apego paterno-materno son adaptaciones, mientras que las adicciones, el gusto por el f\'utbol o el sexo con anticonceptivos son subproductos. El \textbf{ruido} es el tercer fruto de un proceso evolutivo: variaci\'on aleatoria que no cumple ninguna funci\'on y que simplemente aparece sin haber sido seleccionada.
+\end{respuesta}
+
+\eje{3. Emociones}
+\pregunta{\textquestiondown Por qu\'e a algunas emociones se las llama \textbf{b\'asicas} (o primarias)? D\'e dos ejemplos y explique qu\'e ventaja de supervivencia o reproducci\'on se les atribuye.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Se las considera b\'asicas por tres razones: aparecen desde \textbf{edades muy tempranas} en todos los humanos (incluso en personas con ceguera y sordera cong\'enitas), son \textbf{universales} (se observan en todas las culturas, idea que ya propon\'ia Darwin) y las podemos \textbf{reconocer a partir de expresiones faciales universales}, comunes a todas las culturas e independientes del aprendizaje cultural. Ejemplos de emociones b\'asicas son el miedo, el asco, la ira, la tristeza, la alegr\'ia y la sorpresa.
+
+Dos ejemplos con su ventaja evolutiva: el \textbf{asco} nos protege de ingerir sustancias potencialmente t\'oxicas o en mal estado (venenos, comida podrida), reduciendo el riesgo de intoxicaci\'on; el \textbf{miedo} activa el organismo para pelear o huir ante una amenaza (respuesta de lucha o huida), preparando al cuerpo para responder a situaciones peligrosas. En ambos casos son ``dispositivos de supervivencia'' que aumentaron la probabilidad de sobrevivir y dejar descendencia.
+\end{respuesta}
+
+\eje{4. Gen\'etica del comportamiento}
+\pregunta{Defina el \textbf{componente gen\'etico} de un rasgo de manera rigurosa. Al estudiar el componente ambiental, \textquestiondown en qu\'e dos grandes grupos se dividen las variables y c\'omo se distingue uno de otro?}
+
+\begin{respuesta}
+\textit{Respuesta posible.} El \textbf{componente gen\'etico $(C_G)$} de un rasgo es la proporci\'on de la variaci\'on total del rasgo entre individuos que se explica por las variaciones en sus genes:
+\[
+C_G = \frac{V_G}{V_G + V_A} = \frac{V_G}{V_T},
+\]
+donde $V_G$ es la varianza gen\'etica y $V_A$ la ambiental. El componente ambiental es el porcentaje de la variaci\'on total explicado por los ambientes de desarrollo; por definici\'on, componente gen\'etico m\'as componente ambiental suman 100\,\%. Es crucial recordar que el componente gen\'etico \textbf{vale para una poblaci\'on dada en un momento dado del tiempo}: no es una propiedad fija del rasgo.
+
+Al estudiar el componente ambiental se dividen las variables en dos grupos. Las \textbf{variables del ambiente compartido} son todo lo que no es gen\'etico y hace que los miembros de una familia se parezcan: lo que comparten dos hermanos criados juntos pero no dos separados al nacer (clase social, estilo parental, barrio de crianza). Las \textbf{variables del ambiente no compartido} son todo lo que no es gen\'etico ni se comparte entre miembros de una familia, ligado a la experiencia particular de cada individuo. En f\'ormula: $V_A = V_{AC} + V_{ANC}$.
+\end{respuesta}
+
+\end{document}
