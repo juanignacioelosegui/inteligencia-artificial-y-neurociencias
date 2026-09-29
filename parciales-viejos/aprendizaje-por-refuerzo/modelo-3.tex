@@ -1,0 +1,154 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{mdframed}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+
+\geometry{margin=2.5cm}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+\newmdenv[
+    linecolor=gray!50,
+    linewidth=0.5pt,
+    backgroundcolor=gray!8,
+    skipabove=6pt,
+    skipbelow=6pt,
+    innertopmargin=6pt,
+    innerbottommargin=6pt,
+]{respuesta}
+
+\newcommand{\pregunta}[1]{\subsection{#1}}
+\newcommand{\eje}[1]{\subsubsection{#1}}
+\newcommand{\argmax}{\operatorname*{arg\,m\acute{a}x}}
+
+\title{\textbf{Modelo de Parcial 3 -- Aprendizaje por Refuerzo} \\
+\large Inteligencia Artificial y Neurociencias \\ Universidad Torcuato Di Tella}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{mdframed}[linecolor=black, linewidth=0.7pt]
+\textbf{Formato.} Combina \textbf{ejercicios pr\'acticos} (seguimiento manual de algoritmos, c\'alculo de retornos y valores) con \textbf{preguntas de interpretaci\'on} sobre las f\'ormulas y conceptos. Debajo de cada consigna se da una \emph{respuesta posible} a modo de gu\'ia. Al final se incluye un \emph{banco de preguntas extra} para practicar.
+\end{mdframed}
+
+\eje{1. Bandidos: UCB (pr\'actico)}
+\pregunta{Se usa selecci\'on por l\'imite de confianza superior (UCB): $A_t \doteq \argmax_a\big[Q_t(a) + c\sqrt{\ln t / N_t(a)}\big]$, con $c=1$. Ya se ejecutaron 4 pasos ($t=5$, $\ln 5 \approx 1{,}609$) y el estado es $N(1){=}2, Q(1){=}1$; $N(2){=}1, Q(2){=}2$; $N(3){=}1, Q(3){=}0$. \textquestiondown Qu\'e acci\'on elige UCB en $t=5$?}
+
+\begin{respuesta}
+\textit{Respuesta posible.}
+\begin{align*}
+\text{UCB}(1) &= 1 + \sqrt{1{,}609/2} = 1 + 0{,}897 \approx 1{,}90 \\
+\text{UCB}(2) &= 2 + \sqrt{1{,}609/1} = 2 + 1{,}269 \approx 3{,}27 \\
+\text{UCB}(3) &= 0 + \sqrt{1{,}609/1} = 1{,}269 \approx 1{,}27
+\end{align*}
+El m\'aximo es la \textbf{acci\'on 2}. (El t\'ermino $c\sqrt{\ln t/N_t(a)}$ crece cuando una acci\'on se explor\'o poco: premia la \emph{incertidumbre}, favoreciendo acciones con pocas visitas.)
+\end{respuesta}
+
+\eje{2. MDP: retorno infinito (pr\'actico)}
+\pregunta{(a) Con $\gamma=0{,}8$ y la secuencia $R_1=3$ seguida de una sucesi\'on infinita de dieces ($R_2=R_3=\dots=10$), calcular $G_0$. (b) Demostrar que si $R_t=1$ para todo $t$, entonces $G_t = \frac{1}{1-\gamma}$.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} (a) Desde $t=1$, la cola es una serie geom\'etrica: $G_1 = \sum_{k=0}^{\infty}10\,\gamma^{k} = \frac{10}{1-0{,}8}=50$. Entonces $G_0 = R_1 + \gamma G_1 = 3 + 0{,}8\cdot 50 = \mathbf{43}$.
+
+(b) $G_t = \sum_{k=0}^{\infty}\gamma^{k}\cdot 1 = 1 + \gamma + \gamma^2 + \dots = \frac{1}{1-\gamma}$ (serie geom\'etrica de raz\'on $\gamma<1$). Alternativamente, por la forma recursiva $G_t = 1 + \gamma G_t \Rightarrow G_t(1-\gamma)=1 \Rightarrow G_t=\frac{1}{1-\gamma}$.
+\end{respuesta}
+
+\eje{3. SARSA vs Q-learning en una transici\'on (pr\'actico)}
+\pregunta{La tabla $Q$ tiene: $Q(0,a)=4$; en el estado $1$: $Q(1,x)=6, Q(1,y)={-}2, Q(1,z)=1$. El agente est\'a en $S=0$, ejecuta $a$, recibe $R=3$ y pasa a $S'=1$. Con $\gamma=0{,}5$ y $\alpha=0{,}5$: (a)~actualizar $Q(0,a)$ por \textbf{Q-learning}; (b)~actualizar $Q(0,a)$ por \textbf{SARSA} considerando todas las opciones de $A'$ (explotaci\'on y cada exploraci\'on posible).}
+
+\begin{respuesta}
+\textit{Respuesta posible.} (a) \textbf{Q-learning}: usa $\max_a Q(1,a)=6$.
+\[
+Q(0,a) \leftarrow 4 + 0{,}5\,[\,3 + 0{,}5\cdot 6 - 4\,] = 4 + 0{,}5\cdot 2 = \mathbf{5}.
+\]
+(b) \textbf{SARSA}: depende de la acci\'on $A'$ que se elija en $S'=1$.
+\begin{itemize}[nosep]
+\item Explotaci\'on / exploraci\'on que cae en $x$ ($Q=6$): $4+0{,}5[3+0{,}5\cdot6-4]=\mathbf{5}$.
+\item Exploraci\'on en $y$ ($Q=-2$): $4+0{,}5[3+0{,}5\cdot(-2)-4]=4+0{,}5\cdot(-2)=\mathbf{3}$.
+\item Exploraci\'on en $z$ ($Q=1$): $4+0{,}5[3+0{,}5\cdot1-4]=4+0{,}5\cdot(-0{,}5)=\mathbf{3{,}75}$.
+\end{itemize}
+Q-learning siempre toma el m\'aximo; SARSA usa el valor de la acci\'on realmente elegida, por eso su resultado var\'ia con la exploraci\'on.
+\end{respuesta}
+
+\eje{4. Q-learning: par\'ametros (interpretaci\'on)}
+\pregunta{En Q-learning, \textquestiondown qu\'e efecto tiene usar valores extremos en cada par\'ametro? Analice: (a) $\alpha=0$ y $\alpha=1$; (b) $\gamma=0$ y $\gamma=1$; (c) $\varepsilon=0$ y $\varepsilon=1$.}
+
+\begin{respuesta}
+\textit{Respuesta posible.}
+\textbf{(a) $\alpha$ (tasa de aprendizaje).} Con $\alpha=0$ la actualizaci\'on es nula: $Q$ nunca cambia, no aprende. Con $\alpha=1$ la nueva estimaci\'on reemplaza por completo a la vieja ($Q(S,A)=R+\gamma\max_a Q(S',a)$): aprende solo de la \'ultima experiencia, \'util en ambientes determin\'isticos pero inestable si hay ruido.
+
+\textbf{(b) $\gamma$ (descuento).} Con $\gamma=0$ el agente es miope: solo maximiza la recompensa inmediata, ignora el futuro. Con $\gamma=1$ pesa todas las recompensas futuras por igual; en tareas continuas el retorno puede diverger.
+
+\textbf{(c) $\varepsilon$ (exploraci\'on).} Con $\varepsilon=0$ es puramente greedy: nunca explora, puede quedar atrapado en una pol\'itica sub\'optima. Con $\varepsilon=1$ act\'ua siempre al azar: explora todo pero nunca aprovecha lo aprendido (aunque, al ser off-policy, Q-learning igual puede estimar la pol\'itica \'optima si visita suficientemente todos los pares).
+\end{respuesta}
+
+\eje{5. Ambiente estoc\'astico vs determin\'istico (interpretaci\'on)}
+\pregunta{En el juego ``Cuatro en l\'inea'' (dos jugadores), \textquestiondown la funci\'on $p(s',r\mid s,a)$ que caracteriza el ambiente es estoc\'astica o determin\'istica? Justifique. \textquestiondown Qu\'e significa que $\sum_{s',r} p(s',r\mid s,a)=1$?}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Desde la perspectiva del agente, el ambiente incluye al \textbf{oponente}. Si el oponente no juega siempre lo mismo (tiene una pol\'itica estoc\'astica o desconocida), entonces tras la acci\'on del agente el estado resultante $s'$ (que depende de la respuesta del rival) no es \'unico: el ambiente es \textbf{estoc\'astico}. Si el oponente fuera totalmente determin\'istico y conocido, $p$ ser\'ia determin\'istica. La regla del juego en s\'i es determin\'istica, pero la din\'amica $p$ vista por el agente hereda la incertidumbre del rival.
+
+$\sum_{s',r} p(s',r\mid s,a)=1$ expresa que, fijados un estado $s$ y una acci\'on $a$, la distribuci\'on sobre todos los posibles pares (estado siguiente, recompensa) es una distribuci\'on de probabilidad v\'alida: \emph{algo} ocurre con certeza, y las probabilidades de todos los resultados posibles suman 1.
+\end{respuesta}
+
+\eje{6. Temas avanzados (interpretaci\'on)}
+\pregunta{Los m\'etodos de \textbf{gradiente de pol\'iticas} (p.ej.\ REINFORCE) se contraponen a los basados en funci\'on de valor. \textquestiondown Qu\'e aprenden directamente y en qu\'e casos conviene usarlos? Explique adem\'as, en una l\'inea, qu\'e hace \textbf{Monte Carlo Tree Search (MCTS)}.}
+
+\begin{respuesta}
+\textit{Respuesta posible.} Los m\'etodos de gradiente de pol\'iticas aprenden \textbf{directamente una pol\'itica parametrizada} $\pi(a\mid s,\boldsymbol\theta)$ (las probabilidades de cada acci\'on), sin pasar por una funci\'on de valor $q_*$. Se ajustan los par\'ametros por ascenso de gradiente sobre una m\'etrica de desempe\~no $J(\boldsymbol\theta)$. En REINFORCE, la probabilidad de una acci\'on \textbf{sube o baja proporcionalmente al retorno observado} $G$. Convienen cuando hay \textbf{demasiadas acciones}, acciones \textbf{continuas}, o cuando es m\'as simple representar la pol\'itica que el valor (operaci\'on de brazos rob\'oticos, trading, LLMs).
+
+\textbf{MCTS}: planificaci\'on en tiempo de decisi\'on que construye incrementalmente un \'arbol desde el estado actual, simulando trayectorias (selecci\'on--expansi\'on--simulaci\'on--backup) para estimar el valor de las acciones y elegir la mejor. Es el motor de b\'usqueda de AlphaGo.
+\end{respuesta}
+
+%% ============================================================
+\section*{Banco de preguntas extra (para practicar)}
+%% ============================================================
+
+\subsection*{Bandidos de $k$ brazos}
+\begin{itemize}[nosep]
+    \item Explique el compromiso (\emph{trade-off}) entre \textbf{exploraci\'on} y \textbf{explotaci\'on}. \textquestiondown Qu\'e es una acci\'on \emph{greedy}?
+    \item Diferencia entre $q_*(a)$ (valor real) y $Q_t(a)$ (estimaci\'on). \textquestiondown Por qu\'e $Q_t(a)\to q_*(a)$ con el promedio muestral? (Ley de los Grandes N\'umeros).
+    \item En el ejemplo de 10 brazos, \textquestiondown por qu\'e $\varepsilon=0{,}1$ termina eligiendo m\'as la acci\'on \'optima que $\varepsilon=0$ (greedy puro)?
+\end{itemize}
+
+\subsection*{Procesos de Decisi\'on de Markov}
+\begin{itemize}[nosep]
+    \item Distinga $v_\pi(s)$ de $q_\pi(s,a)$ y escriba la relaci\'on $q_\pi(s,a)=\mathbb{E}_\pi[R_{t+1}+\gamma v_\pi(S_{t+1})\mid S_t{=}s, A_t{=}a]$.
+    \item Exprese $p(s'\mid s,a)$ y $r(s,a)$ en funci\'on de $p(s',r\mid s,a)$ (marginalizando y tomando esperanza).
+    \item Diferencia entre m\'etodos \textbf{model-based} (p.ej.\ Value Iteration) y \textbf{model-free} (Monte Carlo, Q-learning). \textquestiondown Por qu\'e casi siempre usamos model-free?
+    \item \textquestiondown Qu\'e es una pol\'itica \'optima $\pi_*$ y las funciones \'optimas $v_*$, $q_*$?
+    \item Modele el Tatet\'i como MDP: estados, acciones, recompensas, \textquestiondown es determin\'istico o estoc\'astico?
+\end{itemize}
+
+\subsection*{Monte Carlo y Diferencias Temporales}
+\begin{itemize}[nosep]
+    \item \textquestiondown Por qu\'e el primer algoritmo MC para estimar $\pi_*$ necesita una pol\'itica $\varepsilon$-greedy y no una greedy pura? (Para visitar todos los pares $(s,a)$).
+    \item Escriba la actualizaci\'on incremental de la media de retornos: $Q \leftarrow Q + \frac{1}{k+1}(G^{(k+1)}-Q)$. \textquestiondown Con qu\'e regla de bandidos se parece?
+    \item Efecto de arrancar con $\varepsilon$ alto (p.ej.\ 1) y bajarlo gradualmente hasta $\approx 0{,}01$ en MC. (Explorar mucho al principio, explotar al final).
+    \item En el ejemplo ``conduciendo a casa'', \textquestiondown por qu\'e TD corrige la predicci\'on en cada tramo y MC reci\'en al llegar?
+\end{itemize}
+
+\subsection*{Deep Q-Learning y temas avanzados}
+\begin{itemize}[nosep]
+    \item \textquestiondown Qu\'e es el error cuadr\'atico $\overline{\mathrm{QE}}(\mathbf{w})=\sum_{s,a}[q_*(s,a)-\hat q(s,a,\mathbf{w})]^2$ y c\'omo se lo reduce con SGD?
+    \item \textquestiondown Por qu\'e DQL se llama m\'etodo \emph{semi-gradiente} y por qu\'e no garantiza convergencia (a diferencia del caso tabular)?
+    \item M\'etodos \textbf{Actor-Critic}: \textquestiondown qu\'e rol cumple el \emph{actor} y qu\'e rol el \emph{cr\'itico}? \textquestiondown En qu\'e se diferencia de REINFORCE? (Bootstrapping / objetivo = error TD).
+    \item Los cinco pasos de MCTS: selecci\'on, expansi\'on, simulaci\'on, backup, repetir. Diferencia entre \emph{pol\'itica del \'arbol} y \emph{pol\'itica rollout}.
+    \item \textbf{AlphaGo} vs \textbf{AlphaGo Zero}: \textquestiondown en qu\'e se diferencian respecto del uso de datos humanos y del \emph{self-play} (\emph{tabula rasa})?
+    \item Preguntas para neurociencias: \textquestiondown tiene el cerebro un mecanismo parecido a $\varepsilon$-greedy? \textquestiondown C\'omo se relaciona la recompensa de RL con la dopamina? \textquestiondown Hay algo an\'alogo al \emph{replay de experiencias} durante el sue\~no?
+\end{itemize}
+
+\end{document}
