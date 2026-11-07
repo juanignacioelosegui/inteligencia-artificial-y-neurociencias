@@ -1,0 +1,6 @@
+{
+    "r.lsp.promptToInstall": false,
+    "code-runner.executorMap": {
+        "python": "python3 -u"
+    }
+}
