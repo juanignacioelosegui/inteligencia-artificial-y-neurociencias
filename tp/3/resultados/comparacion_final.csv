@@ -1,0 +1,4 @@
+Modelo,Macro-F1 Test,Inferencia Test (s),N Test,Respuestas inválidas
+BETO fine-tuning (lr=2e-5),0.571457505974793,1.2229557470000143,427,
+TF-IDF + Bigramas,0.5350473650918998,0.0729979940000475,427,
+Qwen2.5-1.5B Prompt mejorado,0.4090104804682183,38.19584192400004,427,0.0

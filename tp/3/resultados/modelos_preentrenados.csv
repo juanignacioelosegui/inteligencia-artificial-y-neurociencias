@@ -1,0 +1,4 @@
+Modelo,Macro-F1,Entrenamiento (s),Inferencia (s)
+BETO congelado (mean pooling) + LogReg balanceada,0.42201730602662946,8.239629895000007,1.1143321119999996
+"BETO fine-tuning (lr=2e-5, 3 épocas, max_len=256)",0.5554448741487298,62.224256140999955,1.1531069279999997
+"BETO fine-tuning (lr=5e-5, 3 épocas, max_len=256)",0.5458387193752873,59.84305159500002,1.256100564999997
