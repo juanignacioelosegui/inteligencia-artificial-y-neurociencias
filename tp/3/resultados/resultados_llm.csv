@@ -1,0 +1,4 @@
+Modelo,Macro-F1,Entrenamiento (s),Inferencia (s),Respuestas inválidas
+Qwen2.5-1.5B zero-shot,0.3964155876383682,0,29.32269580000002,0
+Qwen2.5-1.5B few-shot,0.4082914268391478,0,47.43630451399997,0
+Qwen2.5-1.5B zero-shot-mejorado,0.4472161028920396,0,36.82722449800008,0
